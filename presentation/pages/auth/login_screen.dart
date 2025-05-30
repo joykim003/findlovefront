@@ -3,35 +3,70 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/shared/widgets/custom_text_field.dart'; // Importez le CustomTextField
+import 'package:frontend/providers/auth_provider.dart';
 
-class LoginScreen extends ConsumerWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Ajouter les contrôleurs pour les champs email et mot de passe
-    // final _emailController = TextEditingController();
-    // final _passwordController = TextEditingController();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+}
 
-    // TODO: Ajouter la logique de validation et de connexion
-    // void _login() {
-    //   if (_formKey.currentState!.validate()) {
-    //     // Appeler le AuthService
-    //     // Gérer le loading state
-    //     // Naviguer si succès
-    //   }
-    // }
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLoading = false;
+  String? _error;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(authStateProvider.notifier).login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (mounted) {
+        context.go('/');
+      }
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Se connecter'),
-        // Optionnel: masquer le bouton retour si nécessaire
-        // automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -44,114 +79,63 @@ class LoginScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
-
-                // Remplacé par CustomTextField
+                  if (_error != null) ...[
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 CustomTextField(
-                  // controller: _emailController,
+                    controller: _emailController,
                   labelText: 'Email',
                   keyboardType: TextInputType.emailAddress,
-                  // TODO: Ajouter la validation
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer votre email';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Veuillez entrer un email valide';
+                      }
+                      return null;
+                    },
                 ),
                 const SizedBox(height: 16),
-
-                // Remplacé par CustomTextField
                 CustomTextField(
-                  // controller: _passwordController,
+                    controller: _passwordController,
                   labelText: 'Mot de passe',
                   obscureText: true,
-                  // TODO: Ajouter la validation
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Veuillez entrer votre mot de passe';
+                      }
+                      if (value.length < 6) {
+                        return 'Le mot de passe doit contenir au moins 6 caractères';
+                      }
+                      return null;
+                    },
                 ),
                 const SizedBox(height: 24),
-
-                // TODO: Remplacer par PrimaryButton avec loading state
                 ElevatedButton(
-                  onPressed: () {
-                    // TODO: Appeler la fonction _login()
-                    print('Login button pressed');
-                    // Exemple de navigation après succès (temporaire)
-                    context.go('/home');
-                  },
-                  style: ElevatedButton.styleFrom(
-                     minimumSize: const Size(double.infinity, 50),
-                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                     ),
-                  ),
-                  child: const Text('Se connecter'),
+                    onPressed: _isLoading ? null : _login,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Se connecter'),
                 ),
                 const SizedBox(height: 20),
-
-                TextButton(
-                  onPressed: () {
-                    // TODO: Naviguer vers l'écran "Mot de passe oublié"
-                    print('Forgot Password pressed');
-                    // Exemple de navigation (temporaire)
-                    // context.push('/forgot-password');
-                  },
-                  child: const Text('Mot de passe oublié ?'),
-                ),
-                const SizedBox(height: 30),
-
-                const Text(
-                  'Ou se connecter avec',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 20),
-
-                // Boutons de connexion sociale
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // TODO: Remplacer par IconActionButton personnalisé ou GradientButton pour Google
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Implémenter connexion Google
-                        print('Google login pressed');
-                      },
-                       icon: Image.asset('assets/icons/google_logo.png', height: 24), // TODO: Ajoutez logos
-                      label: const Text('Google'),
-                       style: ElevatedButton.styleFrom(
-                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                         ),
-                       ),
-                    ),
-                    // TODO: Remplacer par IconActionButton personnalisé ou GradientButton pour Facebook
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Implémenter connexion Facebook
-                        print('Facebook login pressed');
-                      },
-                      icon: Image.asset('assets/icons/facebook_logo.png', height: 24), // TODO: Ajoutez logos
-                      label: const Text('Facebook'),
-                       style: ElevatedButton.styleFrom(
-                         foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12), backgroundColor: Colors.blue[700],
-                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                         ),
-                       ),
-                    ),
-                    // Ajoutez d'autres options (Apple, etc.)
-                  ],
-                ),
-                const SizedBox(height: 40),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Pas encore de compte ?"),
                     TextButton(
                       onPressed: () {
-                        // Naviguer vers l'écran d'inscription
                         context.go('/register');
                       },
-                      child: const Text("S'inscrire"),
+                    child: const Text('Pas encore de compte ? S\'inscrire'),
                     ),
                   ],
                 ),
-              ],
             ),
           ),
         ),

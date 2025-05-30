@@ -97,7 +97,7 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      children: [
               if (profile.photos.isNotEmpty)
                 SizedBox(
                   height: 300,
@@ -110,9 +110,9 @@ class _HomePageState extends State<HomePage> {
                         child: Icon(Icons.error, size: 50),
                       );
                     },
-                  ),
-                ),
-              Padding(
+          ),
+        ),
+        Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     const SizedBox(height: 16),
                     Text(
-                      profile.bio!,
+                      profile.bio,
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 16),
@@ -160,30 +160,30 @@ class _HomePageState extends State<HomePage> {
                     ],
                     const SizedBox(height: 16),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        IconActionButton(
-                          icon: Icons.close,
-                          color: AppTheme.errorColor,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconActionButton(
+                icon: Icons.close,
+                color: AppTheme.errorColor,
                           onPressed: () => _handlePass(profile.id),
-                        ),
-                        IconActionButton(
-                          icon: Icons.star,
-                          color: AppTheme.accentColor,
-                          size: 60,
+              ),
+              IconActionButton(
+                icon: Icons.star,
+                color: AppTheme.accentColor,
+                size: 60,
                           onPressed: () => _handleSuperLike(profile.id),
-                        ),
-                        IconActionButton(
-                          icon: Icons.favorite,
-                          color: AppTheme.successColor,
+              ),
+              IconActionButton(
+                icon: Icons.favorite,
+                color: AppTheme.successColor,
                           onPressed: () => _handleLike(profile.id),
                         ),
                       ],
-                    ),
-                  ],
-                ),
               ),
             ],
+          ),
+        ),
+      ],
           ),
         );
       },

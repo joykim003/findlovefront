@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import '../../../data/models/user_profile.dart';
 import '../../../data/services/api_service.dart';
 import '../../widgets/interests_section.dart';
