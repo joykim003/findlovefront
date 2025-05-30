@@ -1,9 +1,9 @@
 // lib/presentation/widgets/swipeable_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
-import 'package:myapp/data/models/user_profile.dart';
-import 'package:myapp/presentation/widgets/photo_carousel.dart'; // Importez PhotoCarousel
-import 'package:myapp/presentation/widgets/user_info_tile.dart'; // Importez UserInfoTile
+import 'package:frontend/data/models/user_profile.dart';
+import 'package:frontend/presentation/widgets/photo_carousel.dart'; // Importez PhotoCarousel
+import 'package:frontend/presentation/widgets/user_info_tile.dart'; // Importez UserInfoTile
 
 class SwipeableCard extends StatefulWidget {
   final UserProfile user;
@@ -20,15 +20,18 @@ class SwipeableCard extends StatefulWidget {
   });
 
   @override
-  _SwipeableCardState createState() => _SwipeableCardState();
+  SwipeableCardState createState() => SwipeableCardState();
 }
 
-class _SwipeableCardState extends State<SwipeableCard> with SingleTickerProviderStateMixin {
+class SwipeableCardState extends State<SwipeableCard> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _animation;
 
   Offset _dragPosition = Offset.zero;
   double _rotationAngle = 0;
+  double dragDistance = 0;
+  bool isDragging = false;
+  Offset dragStartPosition = Offset.zero;
 
   @override
   void initState() {
@@ -67,14 +70,27 @@ void dispose() {
     _controller.animateWith(simulation);
   }
 
+  void resetPosition() {
+    setState(() {
+      dragDistance = 0;
+      isDragging = false;
+    });
+  }
+
   void swipeLeft() {
-    _animation = Tween<Offset>(begin: _dragPosition, end: const Offset(-1000, 0)).animate(_controller);
-    _controller.forward().whenComplete(() => widget.onSwipedLeft?.call());
+    // Animation de swipe vers la gauche
+    setState(() {
+      dragDistance = -1000;
+      isDragging = true;
+    });
   }
 
   void swipeRight() {
-    _animation = Tween<Offset>(begin: _dragPosition, end: const Offset(1000, 0)).animate(_controller);
-    _controller.forward().whenComplete(() => widget.onSwipedRight?.call());
+    // Animation de swipe vers la droite
+    setState(() {
+      dragDistance = 1000;
+      isDragging = true;
+    });
   }
 
   void swipeUp() {
@@ -84,53 +100,55 @@ void dispose() {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Implémenter la gestion des gestes de swipe (GestureDetector ou Draggable)
-    return Center(
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: Card(
-
-          child: GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _dragPosition += details.delta;
-                // Simple rotation based on horizontal drag
-                _rotationAngle = _dragPosition.dx / 1000;
-              });
-            },
-            onPanEnd: (details) {
-              // Define threshold for a swipe
-              const double swipeThreshold = 100.0;
-
-              if (_dragPosition.dx > swipeThreshold) { // Swiped right (like)
-                // Swiped right (like)
-                widget.onSwipedRight?.call();
-              } else if (_dragPosition.dx < -swipeThreshold) { // Swiped left (pass)
-                // Swiped left (pass)
-                widget.onSwipedLeft?.call();
-              } else if (_dragPosition.dy < -swipeThreshold) { // Swiped up (super like)
-                // Swiped up (super like)
-                widget.onSwipedUp?.call();
-              }
-
-              _runAnimation(details.velocity.pixelsPerSecond, _dragPosition);
-            },
-            child: Transform.translate(
-              offset: _dragPosition,
-              child: Transform.rotate(
-                angle: _rotationAngle,
-                child: Card(
-                  elevation: 4.0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: ClipRRect(
-            borderRadius: BorderRadius.circular(16.0),
-            child: Stack(
-              children: [
-                // Afficher les photos du profil en utilisant PhotoCarousel
-                PhotoCarousel(photos: widget.user.photos),
+    return GestureDetector(
+      onPanStart: (details) {
+        setState(() {
+          dragStartPosition = details.globalPosition;
+        });
+      },
+      onPanUpdate: (details) {
+        setState(() {
+          dragDistance = details.globalPosition.dx - dragStartPosition.dx;
+          isDragging = true;
+          _dragPosition = details.globalPosition;
+          _rotationAngle = dragDistance / 1000;
+        });
+      },
+      onPanEnd: (details) {
+        final velocity = details.velocity.pixelsPerSecond.dx;
+        if (dragDistance.abs() > 100 || velocity.abs() > 500) {
+          final isRight = dragDistance > 0 || velocity > 0;
+          if (isRight) {
+            widget.onSwipedRight?.call();
+          } else {
+            widget.onSwipedLeft?.call();
+          }
+        } else {
+          setState(() {
+            dragDistance = 0;
+            isDragging = false;
+          });
+        }
+        _runAnimation(details.velocity.pixelsPerSecond, _dragPosition);
+      },
+      child: Transform.translate(
+        offset: Offset(dragDistance, 0),
+        child: Transform.rotate(
+          angle: _rotationAngle,
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.6,
+            child: Card(
+              elevation: 4.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16.0),
+                child: Stack(
+                  children: [
+                    // Afficher les photos du profil en utilisant PhotoCarousel
+                    PhotoCarousel(photos: widget.user.photos),
                     // Afficher les informations de l'utilisateur en bas de la carte
                     Positioned(
                       bottom: 0,
@@ -192,23 +210,9 @@ void dispose() {
                         ),
                       ),
                     ),
-                // TODO: Afficher les indicateurs visuels "LIKE", "PASS", "SUPER LIKE" pendant le swipe
-                 // Utiliser Positioned et Opacity ou Transform.rotate/translate
-                 // Exemple de placeholder:
-                 // if (_dragPosition.dx > 50)
-                 //    Positioned(top: 40, right: 40, child: Text('LIKE', style: TextStyle(color: Colors.green, fontSize: 48, fontWeight: FontWeight.bold))),
-                 // if (_dragPosition.dx < -50)
-                 //    Positioned(top: 40, left: 40, child: Text('PASS', style: TextStyle(color: Colors.red, fontSize: 48, fontWeight: FontWeight.bold))),
-                 // if (_dragPosition.dx.abs() > 50 || _dragPosition.dy.abs() > 50) // Show indicator only when dragging
-                 //   Positioned.fill(child: Center(child: _buildSwipeIndicator())), // Implement _buildSwipeIndicator
-
-                 // if (_dragPosition.dy < -50)
-                 //    Positioned(bottom: 100, child: Center(child: Text('SUPER LIKE', style: TextStyle(color: Colors.blue, fontSize: 48, fontWeight: FontWeight.bold)))),
-              ],
-            ),
-          ),
-        ),
-      ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

@@ -2,26 +2,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:myapp/presentation/pages/home/home_screen.dart';
-import 'package:myapp/presentation/pages/splash/splash_screen.dart';
-import 'package:myapp/presentation/pages/onboarding/onboarding_screen.dart';
-import 'package:myapp/presentation/pages/home/home_page.dart';
-import 'package:myapp/presentation/pages/auth/login_screen.dart';
-import 'package:myapp/presentation/pages/auth/register_screen.dart'; // Importez le nouvel écran
-import 'package:myapp/shared/theme/app_theme.dart';
+import 'package:frontend/presentation/pages/splash/splash_screen.dart';
+import 'package:frontend/presentation/pages/onboarding/onboarding_screen.dart';
+import 'package:frontend/presentation/pages/home/home_page.dart';
+import 'package:frontend/presentation/pages/auth/login_screen.dart';
+import 'package:frontend/presentation/pages/auth/register_screen.dart'; // Importez le nouvel écran
+import 'package:frontend/shared/theme/app_theme.dart';
 
 void main() {
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(const ProviderScope(child: Myapp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class Myapp extends StatelessWidget {
+  const Myapp({super.key});
   
   get sync => null;
 
   @override
   Widget build(BuildContext context) {
-    final _router = GoRouter(
+    final router = GoRouter(
       routes: [
         GoRoute(
           path: '/',
@@ -51,7 +50,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'MatchApp',
       theme: AppTheme.lightTheme,
-      routerConfig: _router,
+      routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
   }

@@ -9,10 +9,10 @@ class PhotoCarousel extends StatefulWidget {
   const PhotoCarousel({super.key, required this.photos});
 
   @override
-  _PhotoCarouselState createState() => _PhotoCarouselState();
+  PhotoCarouselState createState() => PhotoCarouselState();
 }
 
-class _PhotoCarouselState extends State<PhotoCarousel> {
+class PhotoCarouselState extends State<PhotoCarousel> {
   final PageController _pageController = PageController();
 
   @override

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:myapp/shared/widgets/custom_text_field.dart'; // Importez le CustomTextField
+import 'package:frontend/shared/widgets/custom_text_field.dart'; // Importez le CustomTextField
 
 class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
