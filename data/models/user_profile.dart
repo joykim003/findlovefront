@@ -14,7 +14,7 @@ class UserProfile {
   final String orientation; // Ajout de l'orientation
   final String? location; // La localisation pourrait être optionnelle
   final List<String> interests; // Liste d'intérêts (String pour l'instant)
-  final String? bio; // La bio pourrait être optionnelle
+  final String bio;
   final List<String> photos; // Liste d'URLs ou de chemins d'accès aux photos (String pour l'instant)
 
   UserProfile({
@@ -25,9 +25,33 @@ class UserProfile {
     required this.orientation, // Rendu obligatoire
     this.location,
     required this.interests, // Rendu obligatoire
-    this.bio,
+    required this.bio,
     required this.photos, // Rendu obligatoire
   });
+
+  UserProfile copyWith({
+    int? id,
+    String? name,
+    int? age,
+    String? gender,
+    String? orientation,
+    List<String>? interests,
+    List<String>? photos,
+    String? bio,
+    String? location,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      orientation: orientation ?? this.orientation,
+      interests: interests ?? this.interests,
+      photos: photos ?? this.photos,
+      bio: bio ?? this.bio,
+      location: location ?? this.location,
+    );
+  }
 
   // Factory method pour créer un UserProfile à partir d'un Map (souvent utilisé pour le JSON)
   factory UserProfile.fromJson(Map<String, dynamic> json) {
@@ -53,7 +77,7 @@ class UserProfile {
       orientation: json['orientation'] as String,
       location: json['location'] as String?,
       interests: cleanList(json['interests']),
-      bio: json['bio'] as String?,
+      bio: json['bio'] as String,
       photos: cleanList(json['photos']),
     );
   }

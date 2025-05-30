@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:frontend/presentation/widgets/bottom_nav_bar.dart';
 import 'package:frontend/presentation/widgets/custom_app_bar.dart';
 import 'package:frontend/presentation/widgets/icon_action_button.dart';
-import 'package:frontend/presentation/widgets/swipeable_card.dart';
 import 'package:frontend/shared/theme/app_theme.dart';
 import 'package:frontend/data/models/user_profile.dart';
 import 'package:frontend/data/services/api_service.dart';
@@ -16,10 +14,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final GlobalKey<SwipeableCardState> _swipeableCardKey = GlobalKey<SwipeableCardState>();
   final ApiService _apiService = ApiService();
   List<UserProfile> _profiles = [];
-  int _currentProfileIndex = 0;
   bool _isLoading = true;
   String? _error;
 
@@ -49,62 +45,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _handleLike() async {
-    if (_currentProfileIndex >= _profiles.length) return;
-
-    final currentProfile = _profiles[_currentProfileIndex];
-    try {
-      final result = await _apiService.likeProfile(currentProfile.id);
-      debugPrint('Like result: $result');
-      
-      // Si c'est un match, on pourrait afficher une notification
-      if (result['message'] == "C'est un match !") {
-        // TODO: Afficher une notification de match
-      }
-
-      setState(() {
-        _currentProfileIndex++;
-      });
-    } catch (e) {
-      debugPrint('Erreur lors du like: $e');
-    }
-  }
-
-  Future<void> _handlePass() async {
-    if (_currentProfileIndex >= _profiles.length) return;
-
-    final currentProfile = _profiles[_currentProfileIndex];
-    try {
-      await _apiService.passProfile(currentProfile.id);
-      setState(() {
-        _currentProfileIndex++;
-      });
-    } catch (e) {
-      debugPrint('Erreur lors du pass: $e');
-    }
-  }
-
-  Future<void> _handleSuperLike() async {
-    if (_currentProfileIndex >= _profiles.length) return;
-
-    final currentProfile = _profiles[_currentProfileIndex];
-    try {
-      final result = await _apiService.superLikeProfile(currentProfile.id);
-      debugPrint('Super like result: $result');
-      
-      // Si c'est un match, on pourrait afficher une notification
-      if (result['message'] == "C'est un match !") {
-        // TODO: Afficher une notification de match
-      }
-
-      setState(() {
-        _currentProfileIndex++;
-      });
-    } catch (e) {
-      debugPrint('Erreur lors du super like: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,19 +59,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: _buildBody(),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          switch (index) {
-            case 1:
-              context.go('/matches');
-              break;
-            case 2:
-              context.go('/profile');
-              break;
-          }
-        },
-      ),
     );
   }
 
@@ -156,50 +83,157 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    if (_currentProfileIndex >= _profiles.length) {
+    if (_profiles.isEmpty) {
       return const Center(
         child: Text('Plus de profils disponibles pour le moment !'),
       );
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: Center(
-            child: SwipeableCard(
-              key: _swipeableCardKey,
-              user: _profiles[_currentProfileIndex],
-              onSwipedLeft: _handlePass,
-              onSwipedRight: _handleLike,
-              onSwipedUp: _handleSuperLike,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return ListView.builder(
+      itemCount: _profiles.length,
+      itemBuilder: (context, index) {
+        final profile = _profiles[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconActionButton(
-                icon: Icons.close,
-                color: AppTheme.errorColor,
-                onPressed: () => _swipeableCardKey.currentState?.swipeLeft(),
-              ),
-              IconActionButton(
-                icon: Icons.star,
-                color: AppTheme.accentColor,
-                size: 60,
-                onPressed: () => _swipeableCardKey.currentState?.swipeUp(),
-              ),
-              IconActionButton(
-                icon: Icons.favorite,
-                color: AppTheme.successColor,
-                onPressed: () => _swipeableCardKey.currentState?.swipeRight(),
+              if (profile.photos.isNotEmpty)
+                SizedBox(
+                  height: 300,
+                  width: double.infinity,
+                  child: Image.network(
+                    profile.photos[0],
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(Icons.error, size: 50),
+                      );
+                    },
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${profile.name}, ${profile.age}',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (profile.location != null)
+                      Text(
+                        profile.location!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      profile.bio!,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    if (profile.interests.isNotEmpty) ...[
+                      const Text(
+                        'Intérêts',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: profile.interests.map((interest) {
+                          return Chip(
+                            label: Text(interest),
+                            backgroundColor: AppTheme.accentColor.withOpacity(0.2),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconActionButton(
+                          icon: Icons.close,
+                          color: AppTheme.errorColor,
+                          onPressed: () => _handlePass(profile.id),
+                        ),
+                        IconActionButton(
+                          icon: Icons.star,
+                          color: AppTheme.accentColor,
+                          size: 60,
+                          onPressed: () => _handleSuperLike(profile.id),
+                        ),
+                        IconActionButton(
+                          icon: Icons.favorite,
+                          color: AppTheme.successColor,
+                          onPressed: () => _handleLike(profile.id),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        );
+      },
     );
+  }
+
+  Future<void> _handleLike(int profileId) async {
+    try {
+      final result = await _apiService.likeProfile(profileId);
+      if (result['message'] == "C'est un match !") {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("C'est un match !")),
+          );
+        }
+      }
+      _removeProfile(profileId);
+    } catch (e) {
+      debugPrint('Erreur lors du like: $e');
+    }
+  }
+
+  Future<void> _handlePass(int profileId) async {
+    try {
+      await _apiService.passProfile(profileId);
+      _removeProfile(profileId);
+    } catch (e) {
+      debugPrint('Erreur lors du pass: $e');
+    }
+  }
+
+  Future<void> _handleSuperLike(int profileId) async {
+    try {
+      final result = await _apiService.superLikeProfile(profileId);
+      if (result['message'] == "C'est un match !") {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("C'est un match !")),
+          );
+        }
+      }
+      _removeProfile(profileId);
+    } catch (e) {
+      debugPrint('Erreur lors du super like: $e');
+    }
+  }
+
+  void _removeProfile(int profileId) {
+    setState(() {
+      _profiles.removeWhere((profile) => profile.id == profileId);
+    });
   }
 }

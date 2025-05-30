@@ -11,8 +11,8 @@ class PhotoPicker extends StatelessWidget {
   const PhotoPicker({
     required this.onPhotoSelected,
     required this.apiService,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   Future<void> _pickImage(BuildContext context) async {
     // Demander la permission
@@ -32,10 +32,8 @@ class PhotoPicker extends StatelessWidget {
     if (pickedFile != null) {
       final file = File(pickedFile.path);
       try {
-        final result = await apiService.uploadPhoto(file);
-        if (result['status'] == 'success') {
-          onPhotoSelected(file);
-        }
+        await apiService.uploadPhoto(file);
+        onPhotoSelected(file);
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

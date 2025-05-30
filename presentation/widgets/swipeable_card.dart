@@ -189,12 +189,12 @@ void dispose() {
                               ),
                             const SizedBox(height: 8),
                             // Afficher une version courte de la bio ou les intérêts en utilisant UserInfoTile
-                            if (widget.user.bio != null && widget.user.bio!.isNotEmpty)
+                            if (widget.user.bio.isNotEmpty)
                               UserInfoTile(
                                 icon: Icons.info_outline,
-                                text: widget.user.bio!.length > 100 // Afficher une version courte de la bio
-                                    ? '${widget.user.bio!.substring(0, 100)}...'
-                                    : widget.user.bio!,
+                                text: widget.user.bio.length > 100 // Afficher une version courte de la bio
+                                    ? '${widget.user.bio.substring(0, 100)}...'
+                                    : widget.user.bio,
                                 iconColor: Colors.white70,
                                 textStyle: const TextStyle(color: Colors.white70, fontSize: 14),
                               ),
