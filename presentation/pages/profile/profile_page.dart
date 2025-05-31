@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/services/api_service.dart';
+import '../../../providers/auth_provider.dart';
 import '../../widgets/interests_section.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends ConsumerState<ProfilePage> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = true;
@@ -50,8 +52,18 @@ class _ProfilePageState extends State<ProfilePage> {
         _error = null;
       });
 
-      // Pour l'instant, on utilise l'ID 4 comme dans le backend
-      final profile = await _apiService.getProfile(4);
+      final authState = ref.read(authStateProvider);
+      final user = authState.when(
+        data: (user) => user,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+
+      if (user == null) {
+        throw 'Utilisateur non connecté';
+      }
+
+      final profile = await _apiService.getProfile(user.id);
       
       setState(() {
         _profile = profile;
