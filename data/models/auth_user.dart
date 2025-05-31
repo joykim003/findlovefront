@@ -73,7 +73,7 @@ class AuthUser {
   }
 
   AuthUser copyWith({
-    dynamic? id,
+    dynamic id,
     String? email,
     String? name,
     int? age,

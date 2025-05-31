@@ -19,19 +19,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = true;
   String? _error;
-  
+
   // Contrôleurs pour les champs de texte
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _bioController = TextEditingController();
   final _locationController = TextEditingController();
-  
+
   final String _selectedGender = 'M';
   final String _selectedOrientation = 'H';
   final List<String> _interests = [];
   final List<String> _photos = [];
   UserProfile? _profile;
-  
+
   @override
   void initState() {
     super.initState();
@@ -61,12 +61,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         error: (_, __) => null,
       );
 
-      if (user == null) {
-        throw 'Utilisateur non connecté';
+      if (user == null || user.id == null) {
+        throw 'Utilisateur non connecté ou ID manquant';
       }
 
-      final profile = await _apiService.getProfile(user.id);
-      
+      final profile = await _apiService.getProfile(user.id!);
+
       setState(() {
         _profile = profile;
         _isLoading = false;
@@ -257,4 +257,4 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       ),
     );
   }
-} 
+}

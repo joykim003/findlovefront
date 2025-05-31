@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:frontend/presentation/widgets/custom_app_bar.dart';
 import 'package:frontend/presentation/widgets/icon_action_button.dart';
 import 'package:frontend/shared/theme/app_theme.dart';

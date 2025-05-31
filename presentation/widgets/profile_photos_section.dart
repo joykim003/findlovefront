@@ -17,7 +17,8 @@ class ProfilePhotosSection extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ProfilePhotosSection> createState() => _ProfilePhotosSectionState();
+  ConsumerState<ProfilePhotosSection> createState() =>
+      _ProfilePhotosSectionState();
 }
 
 class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
@@ -34,8 +35,8 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
         error: (_, __) => null,
       );
 
-      if (user == null) {
-        throw 'Utilisateur non connecté';
+      if (user == null || user.id == null) {
+        throw 'Utilisateur non connecté ou ID manquant';
       }
 
       final ImagePicker picker = ImagePicker();
@@ -55,9 +56,9 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
 
       final imageFile = kIsWeb ? image : File(image.path);
       await _apiService.uploadPhoto(imageFile);
-      
+
       // Recharger le profil pour obtenir la liste mise à jour des photos
-      final updatedProfile = await _apiService.getProfile(user.id);
+      final updatedProfile = await _apiService.getProfile(user.id!);
       widget.onPhotosUpdated(updatedProfile.photos);
 
       if (mounted) {
@@ -95,8 +96,8 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
         error: (_, __) => null,
       );
 
-      if (user == null) {
-        throw 'Utilisateur non connecté';
+      if (user == null || user.id == null) {
+        throw 'Utilisateur non connecté ou ID manquant';
       }
 
       setState(() {
@@ -105,9 +106,9 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
       });
 
       await _apiService.deletePhoto(index);
-      
+
       // Recharger le profil pour obtenir la liste mise à jour des photos
-      final updatedProfile = await _apiService.getProfile(user.id);
+      final updatedProfile = await _apiService.getProfile(user.id!);
       widget.onPhotosUpdated(updatedProfile.photos);
 
       if (mounted) {
@@ -208,7 +209,8 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
             if (!_isLoading)
               IconButton(
                 icon: const Icon(Icons.add_photo_alternate),
-                onPressed: widget.photos.length < 5 ? _pickAndUploadImage : null,
+                onPressed:
+                    widget.photos.length < 5 ? _pickAndUploadImage : null,
                 tooltip: widget.photos.length < 5
                     ? 'Ajouter une photo'
                     : 'Maximum 5 photos atteint',
@@ -233,7 +235,8 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
             height: 200,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: widget.photos.length + (widget.photos.length < 5 ? 1 : 0),
+              itemCount:
+                  widget.photos.length + (widget.photos.length < 5 ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == widget.photos.length) {
                   return Padding(
@@ -279,4 +282,4 @@ class _ProfilePhotosSectionState extends ConsumerState<ProfilePhotosSection> {
       ],
     );
   }
-} 
+}

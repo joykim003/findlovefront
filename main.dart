@@ -2,17 +2,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:frontend/presentation/pages/onboarding/onboarding_screen.dart';
 import 'package:frontend/presentation/pages/home/home_page.dart';
 import 'package:frontend/presentation/pages/auth/login_screen.dart';
 import 'package:frontend/presentation/pages/auth/register_screen.dart';
 import 'package:frontend/presentation/pages/matches/matches_page.dart';
 import 'package:frontend/presentation/pages/profile/profile_page.dart';
+import 'package:frontend/presentation/pages/settings/settings_page.dart';
+import 'package:frontend/presentation/pages/settings/notifications_page.dart';
+import 'package:frontend/presentation/pages/settings/change_password_page.dart';
+import 'package:frontend/presentation/pages/settings/terms_page.dart';
+import 'package:frontend/presentation/pages/settings/privacy_policy_page.dart';
 import 'package:frontend/shared/theme/app_theme.dart';
 import 'package:frontend/providers/auth_provider.dart';
+import 'package:frontend/providers/settings_provider.dart';
+import 'package:frontend/presentation/pages/messages/conversations_page.dart';
+import 'package:frontend/presentation/pages/messages/chat_page.dart';
+import 'package:frontend/shared/utils/timeago_fr.dart';
 
-void main() {
-  runApp(const ProviderScope(child: MyApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  // Initialiser les traductions françaises de timeago
+  initializeTimeagoFr();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        settingsProvider.overrideWith((ref) => SettingsNotifier(prefs)),
+        settingsNotifierProvider.overrideWithValue(SettingsNotifier(prefs)),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -21,6 +46,8 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
+    final settings = ref.watch(settingsProvider);
+    final settingsNotifier = ref.watch(settingsNotifierProvider);
 
     final router = GoRouter(
       routes: [
@@ -38,10 +65,41 @@ class MyApp extends ConsumerWidget {
               builder: (context, state) => const MatchesPage(),
             ),
             GoRoute(
+              path: '/messages',
+              builder: (context, state) => const ConversationsPage(),
+            ),
+            GoRoute(
+              path: '/messages/:conversationId',
+              builder: (context, state) => ChatPage(
+                conversationId:
+                    int.parse(state.pathParameters['conversationId']!),
+              ),
+            ),
+            GoRoute(
               path: '/profile',
               builder: (context, state) => const ProfilePage(),
             ),
           ],
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsPage(),
+        ),
+        GoRoute(
+          path: '/settings/notifications',
+          builder: (context, state) => const NotificationsPage(),
+        ),
+        GoRoute(
+          path: '/settings/change-password',
+          builder: (context, state) => const ChangePasswordPage(),
+        ),
+        GoRoute(
+          path: '/settings/terms',
+          builder: (context, state) => const TermsPage(),
+        ),
+        GoRoute(
+          path: '/settings/privacy',
+          builder: (context, state) => const PrivacyPolicyPage(),
         ),
         GoRoute(
           path: '/onboarding',
@@ -58,20 +116,21 @@ class MyApp extends ConsumerWidget {
       ],
       redirect: (context, state) {
         final isAuthenticated = authState.when(
-          data: (user) => user?.isAuthenticated ?? false,
+          data: (user) => user.isAuthenticated ?? false,
           loading: () => false,
           error: (_, __) => false,
         );
 
-        final isAuthRoute = state.matchedLocation == '/login' || 
-                          state.matchedLocation == '/register' ||
-                          state.matchedLocation == '/onboarding';
+        final isAuthRoute = state.matchedLocation == '/login' ||
+            state.matchedLocation == '/register';
 
-        if (!isAuthenticated && !isAuthRoute) {
+        final isOnboardingRoute = state.matchedLocation == '/onboarding';
+
+        if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
           return '/onboarding';
         }
 
-        if (isAuthenticated && isAuthRoute) {
+        if (isAuthenticated && (isAuthRoute || isOnboardingRoute)) {
           return '/';
         }
 
@@ -82,6 +141,8 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'FindLove',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: settingsNotifier.themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
@@ -99,7 +160,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
-    
+
     return authState.when(
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -131,7 +192,13 @@ class ScaffoldWithNavBar extends ConsumerWidget {
                 context.go('/matches');
                 break;
               case 2:
+                context.go('/messages');
+                break;
+              case 3:
                 context.go('/profile');
+                break;
+              case 4:
+                context.go('/settings');
                 break;
             }
           },
@@ -148,9 +215,19 @@ class ScaffoldWithNavBar extends ConsumerWidget {
               label: 'Matches',
             ),
             NavigationDestination(
+              icon: Icon(Icons.message_outlined),
+              selectedIcon: Icon(Icons.message),
+              label: 'Messages',
+            ),
+            NavigationDestination(
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
               label: 'Profil',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Paramètres',
             ),
           ],
         ),
@@ -161,7 +238,9 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final String path = GoRouterState.of(context).uri.path;
     if (path.startsWith('/matches')) return 1;
-    if (path.startsWith('/profile')) return 2;
+    if (path.startsWith('/messages')) return 2;
+    if (path.startsWith('/profile')) return 3;
+    if (path.startsWith('/settings')) return 4;
     return 0;
   }
 }

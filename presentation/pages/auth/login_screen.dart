@@ -36,9 +36,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       await ref.read(authStateProvider.notifier).login(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
       if (mounted) {
         context.go('/');
       }
@@ -67,18 +67,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: SingleChildScrollView(
             child: Form(
               key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Bienvenue de retour !',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Bienvenue de retour !',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   if (_error != null) ...[
                     Text(
                       _error!,
@@ -87,10 +87,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                   ],
-                CustomTextField(
+                  CustomTextField(
                     controller: _emailController,
-                  labelText: 'Email',
-                  keyboardType: TextInputType.emailAddress,
+                    labelText: 'Email',
+                    keyboardType: TextInputType.emailAddress,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre email';
@@ -100,12 +100,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       }
                       return null;
                     },
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
+                  ),
+                  const SizedBox(height: 16),
+                  CustomTextField(
                     controller: _passwordController,
-                  labelText: 'Mot de passe',
-                  obscureText: true,
+                    labelText: 'Mot de passe',
+                    obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Veuillez entrer votre mot de passe';
@@ -115,9 +115,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       }
                       return null;
                     },
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
                     onPressed: _isLoading ? null : _login,
                     child: _isLoading
                         ? const SizedBox(
@@ -126,16 +126,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Se connecter'),
-                ),
-                const SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () {
-                        context.go('/register');
-                      },
+                  ),
+                  const SizedBox(height: 20),
+                  TextButton(
+                    onPressed: () {
+                      context.go('/register');
+                    },
                     child: const Text('Pas encore de compte ? S\'inscrire'),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
