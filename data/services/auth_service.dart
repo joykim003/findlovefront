@@ -53,20 +53,27 @@ class AuthService {
         'password': password,
       });
 
-      final token = response.data['token'];
-      await _setToken(token);
-
-      return AuthUser.fromJson(response.data['user']);
-    } catch (e) {
-      if (e is DioException) {
-        if (e.response?.statusCode == 401) {
-          throw 'Email ou mot de passe incorrect';
+      if (response.statusCode == 200) {
+        final token = response.data['token'];
+        if (token == null) {
+          throw 'Token non reçu du serveur';
         }
-        if (e.response?.data is Map) {
-          throw e.response?.data['message'] ?? 'Une erreur est survenue';
-        }
+        
+        await _setToken(token);
+        return AuthUser.fromJson(response.data['user']);
+      } else {
+        throw 'Erreur de connexion: ${response.statusCode}';
       }
-      rethrow;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw 'Email ou mot de passe incorrect';
+      }
+      if (e.response?.data is Map && e.response?.data['message'] != null) {
+        throw e.response?.data['message'];
+      }
+      throw 'Erreur de connexion: ${e.message}';
+    } catch (e) {
+      throw 'Une erreur inattendue est survenue: $e';
     }
   }
 

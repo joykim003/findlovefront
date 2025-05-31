@@ -1,5 +1,5 @@
 class AuthUser {
-  final String id;
+  final dynamic id;
   final String email;
   final String name;
   final int age;
@@ -27,7 +27,7 @@ class AuthUser {
 
   factory AuthUser.anonymous() {
     return const AuthUser(
-      id: '-1',
+      id: -1,
       email: '',
       name: '',
       age: 0,
@@ -42,7 +42,7 @@ class AuthUser {
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
-      id: json['id'] as String,
+      id: json['id'],
       email: json['email'] as String,
       name: json['name'] as String,
       age: json['age'] as int,
@@ -73,7 +73,7 @@ class AuthUser {
   }
 
   AuthUser copyWith({
-    String? id,
+    dynamic? id,
     String? email,
     String? name,
     int? age,

@@ -23,27 +23,6 @@ class MyApp extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
 
     final router = GoRouter(
-      redirect: (context, state) {
-        final isAuthenticated = authState.when(
-          data: (user) => user?.isAuthenticated,
-          loading: () => false,
-          error: (_, __) => false,
-        );
-
-        final isAuthRoute = state.matchedLocation == '/login' || 
-                          state.matchedLocation == '/register' ||
-                          state.matchedLocation == '/onboarding';
-
-        if (!isAuthenticated! && !isAuthRoute) {
-          return '/onboarding';
-        }
-
-        if (isAuthenticated && isAuthRoute) {
-          return '/';
-        }
-
-        return null;
-      },
       routes: [
         ShellRoute(
           builder: (context, state, child) {
@@ -77,6 +56,27 @@ class MyApp extends ConsumerWidget {
           builder: (context, state) => const RegisterScreen(),
         ),
       ],
+      redirect: (context, state) {
+        final isAuthenticated = authState.when(
+          data: (user) => user?.isAuthenticated ?? false,
+          loading: () => false,
+          error: (_, __) => false,
+        );
+
+        final isAuthRoute = state.matchedLocation == '/login' || 
+                          state.matchedLocation == '/register' ||
+                          state.matchedLocation == '/onboarding';
+
+        if (!isAuthenticated && !isAuthRoute) {
+          return '/onboarding';
+        }
+
+        if (isAuthenticated && isAuthRoute) {
+          return '/';
+        }
+
+        return null;
+      },
     );
 
     return MaterialApp.router(
