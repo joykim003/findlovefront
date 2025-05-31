@@ -4,6 +4,8 @@ import '../../../data/models/user_profile.dart';
 import '../../../data/services/api_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../widgets/interests_section.dart';
+import 'edit_profile_page.dart';
+import '../../widgets/profile_photos_section.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -85,6 +87,14 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     });
   }
 
+  void _onPhotosUpdated(List<String> newPhotos) {
+    setState(() {
+      if (_profile != null) {
+        _profile = _profile!.copyWith(photos: newPhotos);
+      }
+    });
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -124,6 +134,23 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
+  Future<void> _editProfile() async {
+    if (_profile == null) return;
+
+    final updatedProfile = await Navigator.push<UserProfile>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfilePage(profile: _profile!),
+      ),
+    );
+
+    if (updatedProfile != null) {
+      setState(() {
+        _profile = updatedProfile;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,8 +159,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _isLoading ? null : _saveProfile,
+            icon: const Icon(Icons.edit),
+            onPressed: _isLoading ? null : _editProfile,
           ),
         ],
       ),
@@ -174,31 +201,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Photos
-          if (_profile!.photos.isNotEmpty)
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: _profile!.photos.length,
-                itemBuilder: (context, index) {
-                  final photoUrl = _profile!.photos[index];
-                  if (photoUrl.isEmpty) return const SizedBox.shrink();
-                  
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        photoUrl,
-                        width: 150,
-                        height: 200,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+          ProfilePhotosSection(
+            photos: _profile!.photos,
+            onPhotosUpdated: _onPhotosUpdated,
+          ),
 
           const SizedBox(height: 24),
 
@@ -242,14 +248,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           // Bouton de modification
           Center(
             child: ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Implémenter la modification du profil
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Modification du profil à venir !'),
-                  ),
-                );
-              },
+              onPressed: _editProfile,
               icon: const Icon(Icons.edit),
               label: const Text('Modifier mon profil'),
             ),

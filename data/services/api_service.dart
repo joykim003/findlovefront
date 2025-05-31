@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -75,40 +76,37 @@ class ApiService {
     int? age,
     String? gender,
     String? orientation,
-    List<String>? interests,
     String? bio,
     String? location,
+    List<String>? interests,
   }) async {
-    try {
-      final headers = await _getHeaders();
-      final response = await http.put(
-        Uri.parse('$baseUrl/profile'),
-        headers: headers,
-        body: json.encode({
-          if (name != null) 'name': name,
-          if (age != null) 'age': age,
-          if (gender != null) 'gender': gender,
-          if (orientation != null) 'orientation': orientation,
-          if (interests != null) 'interests': interests,
-          if (bio != null) 'bio': bio,
-          if (location != null) 'location': location,
-        }),
-      );
-      
-      if (response.statusCode == 200) {
-        return UserProfile.fromJson(json.decode(response.body));
-      } else if (response.statusCode == 401) {
-        throw 'Session expirée, veuillez vous reconnecter';
-      } else {
-        throw 'Échec de la mise à jour du profil: ${response.statusCode}';
-      }
-    } catch (e) {
-      throw 'Erreur lors de la mise à jour du profil: $e';
+    final headers = await _getHeaders();
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile'),
+      headers: headers,
+      body: jsonEncode({
+        if (name != null) 'name': name,
+        if (age != null) 'age': age,
+        if (gender != null) 'gender': gender,
+        if (orientation != null) 'orientation': orientation,
+        if (bio != null) 'bio': bio,
+        if (location != null) 'location': location,
+        if (interests != null) 'interests': interests,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return UserProfile.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 401) {
+      throw 'Session expirée. Veuillez vous reconnecter.';
+    } else {
+      final error = jsonDecode(response.body);
+      throw error['detail'] ?? 'Une erreur est survenue lors de la mise à jour du profil';
     }
   }
 
   // Uploader une photo
-  Future<String> uploadPhoto(File imageFile) async {
+  Future<String> uploadPhoto(dynamic imageFile) async {
     try {
       final headers = await _getHeaders();
       final request = http.MultipartRequest(
@@ -121,22 +119,41 @@ class ApiService {
         'Authorization': headers['Authorization']!,
       });
 
-      final mimeType = lookupMimeType(imageFile.path) ?? 'image/jpeg';
+      if (kIsWeb) {
+        // Pour le web, on utilise directement le XFile
+        final bytes = await imageFile.readAsBytes();
+        final mimeType = lookupMimeType(imageFile.name) ?? 'image/jpeg';
+        final fileName = imageFile.name;
 
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'photo',
-          imageFile.path,
-          contentType: MediaType.parse(mimeType),
-        ),
-      );
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'photo',
+            bytes,
+            filename: fileName,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      } else {
+        // Pour mobile/desktop, on utilise le File
+        final file = imageFile as File;
+        final mimeType = lookupMimeType(file.path) ?? 'image/jpeg';
+
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'photo',
+            file.path,
+            contentType: MediaType.parse(mimeType),
+          ),
+        );
+      }
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final jsonResponse = json.decode(response.body);
 
       if (response.statusCode == 200) {
-        return jsonResponse['message'];
+        // Retourner l'URL de la photo depuis la réponse
+        return jsonResponse['url'] ?? jsonResponse['message'];
       } else if (response.statusCode == 401) {
         throw 'Session expirée, veuillez vous reconnecter';
       } else {

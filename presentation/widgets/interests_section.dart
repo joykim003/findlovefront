@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../data/services/api_service.dart';
-import 'add_interest_dialog.dart';
 
 class InterestsSection extends StatefulWidget {
   final List<String> interests;
@@ -17,75 +15,54 @@ class InterestsSection extends StatefulWidget {
 }
 
 class _InterestsSectionState extends State<InterestsSection> {
-  final ApiService _apiService = ApiService();
-  bool _isLoading = false;
+  final List<String> _availableInterests = [
+    'Musique',
+    'Cinéma',
+    'Lecture',
+    'Sport',
+    'Voyage',
+    'Cuisine',
+    'Art',
+    'Photographie',
+    'Nature',
+    'Technologie',
+    'Mode',
+    'Danse',
+    'Théâtre',
+    'Jeux vidéo',
+    'Yoga',
+    'Méditation',
+    'Animaux',
+    'Jardinage',
+    'Histoire',
+    'Science',
+  ];
 
-  Future<void> _addInterest() async {
-    final newInterest = await showDialog<String>(
-      context: context,
-      builder: (context) => AddInterestDialog(
-        existingInterests: widget.interests,
-      ),
-    );
+  late List<String> _selectedInterests;
 
-    if (newInterest != null) {
-      setState(() {
-        _isLoading = true;
-      });
+  @override
+  void initState() {
+    super.initState();
+    _selectedInterests = List.from(widget.interests);
+  }
 
-      try {
-        final updatedProfile = await _apiService.updateProfile(
-          interests: [...widget.interests, newInterest],
-        );
-        widget.onInterestsUpdated(updatedProfile.interests);
-      } catch (e) {
-        if (mounted) {
+  void _toggleInterest(String interest) {
+    setState(() {
+      if (_selectedInterests.contains(interest)) {
+        _selectedInterests.remove(interest);
+      } else {
+        if (_selectedInterests.length < 5) {
+          _selectedInterests.add(interest);
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de l\'ajout de l\'intérêt: $e'),
-              backgroundColor: Colors.red,
+            const SnackBar(
+              content: Text('Vous ne pouvez sélectionner que 5 intérêts maximum'),
             ),
           );
         }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
       }
-    }
-  }
-
-  Future<void> _removeInterest(String interest) async {
-    setState(() {
-      _isLoading = true;
+      widget.onInterestsUpdated(_selectedInterests);
     });
-
-    try {
-      final updatedInterests = List<String>.from(widget.interests)
-        ..remove(interest);
-      
-      final updatedProfile = await _apiService.updateProfile(
-        interests: updatedInterests,
-      );
-      widget.onInterestsUpdated(updatedProfile.interests);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la suppression de l\'intérêt: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   @override
@@ -93,41 +70,27 @@ class _InterestsSectionState extends State<InterestsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Intérêts',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (!_isLoading)
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _addInterest,
-                tooltip: 'Ajouter un intérêt',
-              ),
-          ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _availableInterests.map((interest) {
+            final isSelected = _selectedInterests.contains(interest);
+            return FilterChip(
+              label: Text(interest),
+              selected: isSelected,
+              onSelected: (_) => _toggleInterest(interest),
+              selectedColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              checkmarkColor: Theme.of(context).colorScheme.primary,
+            );
+          }).toList(),
         ),
-        if (_isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: widget.interests.map((interest) {
-              return Chip(
-                label: Text(interest),
-                deleteIcon: const Icon(Icons.close, size: 18),
-                onDeleted: () => _removeInterest(interest),
-              );
-            }).toList(),
+        if (_selectedInterests.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text(
+            'Intérêts sélectionnés (${_selectedInterests.length}/5)',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
+        ],
       ],
     );
   }
