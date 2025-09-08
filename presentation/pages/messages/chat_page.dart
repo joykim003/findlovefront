@@ -4,6 +4,8 @@ import 'package:frontend/data/models/conversation.dart';
 import 'package:frontend/providers/conversation_provider.dart';
 import 'package:frontend/providers/auth_provider.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:async';
 
 class ChatPage extends ConsumerStatefulWidget {
   final int conversationId;
@@ -20,12 +22,66 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  Timer? _refreshTimer;
+  StreamSubscription<RemoteMessage>? _messageSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupMessageListener();
+    // Rafraîchir les messages toutes les 5 secondes
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        ref.refresh(conversationMessagesProvider(widget.conversationId));
+      }
+    });
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _refreshTimer?.cancel();
+    _messageSubscription?.cancel();
     super.dispose();
+  }
+
+  void _setupMessageListener() {
+    try {
+      _messageSubscription = FirebaseMessaging.onMessage.listen(
+        (RemoteMessage message) {
+          if (message.data['type'] == 'new_message' &&
+              message.data['conversation_id']?.toString() ==
+                  widget.conversationId.toString()) {
+            if (mounted) {
+              ref.refresh(conversationMessagesProvider(widget.conversationId));
+              _scrollToBottom();
+            }
+          }
+        },
+        onError: (error) {
+          print('Erreur lors de l\'écoute des messages Firebase: $error');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur de connexion aux messages en temps réel'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      print('Erreur lors de la configuration de l\'écouteur Firebase: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur de configuration des messages: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _scrollToBottom() {
@@ -43,10 +99,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (content.isEmpty) return;
 
     _messageController.clear();
-    await ref
-        .read(conversationNotifierProvider.notifier)
-        .sendMessage(widget.conversationId, content);
-    _scrollToBottom();
+    try {
+      await ref
+          .read(conversationNotifierProvider.notifier)
+          .sendMessage(widget.conversationId, content);
+      // Rafraîchir immédiatement les messages après l'envoi
+      ref.refresh(conversationMessagesProvider(widget.conversationId));
+      _scrollToBottom();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'envoi du message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -59,11 +128,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       appBar: AppBar(
         title: Consumer(
           builder: (context, ref, _) {
-            final conversation = ref.watch(conversationNotifierProvider).whenData(
-              (conversations) => conversations.firstWhere(
-                (c) => c.id == widget.conversationId,
-              ),
-            );
+            final conversation =
+                ref.watch(conversationNotifierProvider).whenData(
+                      (conversations) => conversations.firstWhere(
+                        (c) => c.id == widget.conversationId,
+                      ),
+                    );
 
             return conversation.when(
               loading: () => const Text('Chargement...'),
@@ -230,4 +300,4 @@ class MessageBubble extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/data/models/conversation.dart';
 import 'package:frontend/data/services/conversation_service.dart';
 import 'package:frontend/data/services/api_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'dart:async';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 
@@ -24,9 +26,71 @@ final conversationMessagesProvider =
 class ConversationNotifier
     extends StateNotifier<AsyncValue<List<Conversation>>> {
   final ConversationService _service;
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  StreamSubscription<RemoteMessage>? _messageSubscription;
 
   ConversationNotifier(this._service) : super(const AsyncValue.loading()) {
     _loadConversations();
+    _setupMessageListener();
+  }
+
+  @override
+  void dispose() {
+    _messageSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _setupMessageListener() {
+    try {
+      _messageSubscription = FirebaseMessaging.onMessage.listen(
+        (RemoteMessage message) {
+          if (message.data['type'] == 'new_message') {
+            _handleNewMessage(message.data);
+          }
+        },
+        onError: (error) {
+          print('Erreur lors de l\'écoute des messages Firebase: $error');
+        },
+      );
+    } catch (e) {
+      print('Erreur lors de la configuration de l\'écouteur Firebase: $e');
+    }
+  }
+
+  Future<void> _handleNewMessage(Map<String, dynamic> data) async {
+    try {
+      if (!data.containsKey('conversation_id')) {
+        print('Message reçu sans conversation_id');
+        return;
+      }
+
+      final conversationId = int.tryParse(data['conversation_id'].toString());
+      if (conversationId == null) {
+        print('conversation_id invalide: ${data['conversation_id']}');
+        return;
+      }
+
+      final message = await _service.getMessages(conversationId);
+      if (message.isNotEmpty) {
+        state.whenData((conversations) {
+          final updatedConversations = conversations.map((conv) {
+            if (conv.id == conversationId) {
+              return Conversation(
+                id: conv.id,
+                participants: conv.participants,
+                lastMessage: message.last,
+                unreadCount: conv.unreadCount + 1,
+                updatedAt: DateTime.now(),
+              );
+            }
+            return conv;
+          }).toList();
+          state = AsyncValue.data(updatedConversations);
+        });
+      }
+    } catch (e) {
+      print('Erreur lors de la mise à jour du message: $e');
+    }
   }
 
   Future<void> _loadConversations() async {

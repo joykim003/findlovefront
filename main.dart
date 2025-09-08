@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:frontend/data/services/notification_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:frontend/presentation/pages/onboarding/onboarding_screen.dart';
 import 'package:frontend/presentation/pages/home/home_page.dart';
@@ -21,9 +24,37 @@ import 'package:frontend/providers/settings_provider.dart';
 import 'package:frontend/presentation/pages/messages/conversations_page.dart';
 import 'package:frontend/presentation/pages/messages/chat_page.dart';
 import 'package:frontend/shared/utils/timeago_fr.dart';
+import 'package:frontend/presentation/pages/splash/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialiser Firebase
+  try {
+    if (kIsWeb) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: 'AIzaSyC11XZZ3_qwL22YhwZNNDpr2n0QeiRUrNk',
+          appId: '1:649409676103:web:45e4167c947a17cd08c262',
+          messagingSenderId: '649409676103',
+          projectId: 'findlove-b8a98',
+          authDomain: 'findlove-b8a98.firebaseapp.com',
+          storageBucket: 'findlove-b8a98.firebasestorage.app',
+          measurementId: 'G-BP6YS08R59',
+        ),
+      );
+    } else {
+      await Firebase.initializeApp();
+    }
+
+    // Initialiser le service de notification
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+  } catch (e, stack) {
+    debugPrint('Erreur lors de l\'initialisation de Firebase: $e');
+    debugPrint('Stack trace: $stack');
+  }
+
   final prefs = await SharedPreferences.getInstance();
 
   // Initialiser les traductions françaises de timeago
@@ -49,101 +80,126 @@ class MyApp extends ConsumerWidget {
     final settings = ref.watch(settingsProvider);
     final settingsNotifier = ref.watch(settingsNotifierProvider);
 
-    final router = GoRouter(
-      routes: [
-        ShellRoute(
-          builder: (context, state, child) {
-            return ScaffoldWithNavBar(child: child);
-          },
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const HomePage(),
-            ),
-            GoRoute(
-              path: '/matches',
-              builder: (context, state) => const MatchesPage(),
-            ),
-            GoRoute(
-              path: '/messages',
-              builder: (context, state) => const ConversationsPage(),
-            ),
-            GoRoute(
-              path: '/messages/:conversationId',
-              builder: (context, state) => ChatPage(
-                conversationId:
-                    int.parse(state.pathParameters['conversationId']!),
-              ),
-            ),
-            GoRoute(
-              path: '/profile',
-              builder: (context, state) => const ProfilePage(),
-            ),
-          ],
-        ),
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => const SettingsPage(),
-        ),
-        GoRoute(
-          path: '/settings/notifications',
-          builder: (context, state) => const NotificationsPage(),
-        ),
-        GoRoute(
-          path: '/settings/change-password',
-          builder: (context, state) => const ChangePasswordPage(),
-        ),
-        GoRoute(
-          path: '/settings/terms',
-          builder: (context, state) => const TermsPage(),
-        ),
-        GoRoute(
-          path: '/settings/privacy',
-          builder: (context, state) => const PrivacyPolicyPage(),
-        ),
-        GoRoute(
-          path: '/onboarding',
-          builder: (context, state) => const OnboardingScreen(),
-        ),
-        GoRoute(
-          path: '/login',
-          builder: (context, state) => const LoginScreen(),
-        ),
-        GoRoute(
-          path: '/register',
-          builder: (context, state) => const RegisterScreen(),
-        ),
-      ],
-      redirect: (context, state) {
-        final isAuthenticated = authState.when(
-          data: (user) => user.isAuthenticated ?? false,
-          loading: () => false,
-          error: (_, __) => false,
-        );
-
-        final isAuthRoute = state.matchedLocation == '/login' ||
-            state.matchedLocation == '/register';
-
-        final isOnboardingRoute = state.matchedLocation == '/onboarding';
-
-        if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
-          return '/onboarding';
-        }
-
-        if (isAuthenticated && (isAuthRoute || isOnboardingRoute)) {
-          return '/';
-        }
-
-        return null;
-      },
-    );
+    // Forcer la reconstruction de l'application lorsque le thème change
+    final themeMode = settingsNotifier.themeMode;
 
     return MaterialApp.router(
       title: 'FindLove',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: settingsNotifier.themeMode,
-      routerConfig: router,
+      themeMode: themeMode,
+      routerConfig: GoRouter(
+        routes: [
+          GoRoute(
+            path: '/splash',
+            builder: (context, state) => const SplashScreen(),
+          ),
+          ShellRoute(
+            builder: (context, state, child) {
+              return ScaffoldWithNavBar(child: child);
+            },
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (context, state) => const HomePage(),
+              ),
+              GoRoute(
+                path: '/matches',
+                builder: (context, state) => const MatchesPage(),
+              ),
+              GoRoute(
+                path: '/messages',
+                builder: (context, state) => const ConversationsPage(),
+              ),
+              GoRoute(
+                path: '/messages/:conversationId',
+                builder: (context, state) => ChatPage(
+                  conversationId:
+                      int.parse(state.pathParameters['conversationId']!),
+                ),
+              ),
+              GoRoute(
+                path: '/profile',
+                builder: (context, state) => const ProfilePage(),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: '/settings/notifications',
+            builder: (context, state) => const NotificationsPage(),
+          ),
+          GoRoute(
+            path: '/settings/change-password',
+            builder: (context, state) => const ChangePasswordPage(),
+          ),
+          GoRoute(
+            path: '/settings/terms',
+            builder: (context, state) => const TermsPage(),
+          ),
+          GoRoute(
+            path: '/settings/privacy',
+            builder: (context, state) => const PrivacyPolicyPage(),
+          ),
+          GoRoute(
+            path: '/onboarding',
+            builder: (context, state) => const OnboardingScreen(),
+          ),
+          GoRoute(
+            path: '/login',
+            builder: (context, state) => const LoginScreen(),
+          ),
+          GoRoute(
+            path: '/register',
+            builder: (context, state) => const RegisterScreen(),
+          ),
+        ],
+        redirect: (context, state) {
+          // Si l'état d'authentification est en cours de chargement, afficher un écran de chargement
+          if (authState.isLoading) {
+            return '/splash';
+          }
+
+          final isAuthenticated = authState.when(
+            data: (user) => user.isAuthenticated ?? false,
+            loading: () => false,
+            error: (_, __) => false,
+          );
+
+          final isAuthRoute = state.matchedLocation == '/login' ||
+              state.matchedLocation == '/register';
+
+          final isOnboardingRoute = state.matchedLocation == '/onboarding';
+
+          if (!isAuthenticated && !isAuthRoute && !isOnboardingRoute) {
+            return '/onboarding';
+          }
+
+          if (isAuthenticated && (isAuthRoute || isOnboardingRoute)) {
+            return '/';
+          }
+
+          return null;
+        },
+        errorBuilder: (context, state) => Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Page non trouvée'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.go('/'),
+                  child: const Text('Retour à l\'accueil'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
       debugShowCheckedModeBanner: false,
     );
   }
