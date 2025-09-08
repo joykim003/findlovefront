@@ -1,40 +1,58 @@
 // lib/presentation/widgets/bottom_nav_bar.dart
 import 'package:flutter/material.dart';
+import 'package:frontend/shared/theme/app_theme.dart';
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
-  final ValueSetter<int> onTap;
+  final Function(int) onTap;
 
   const BottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      items: const <BottomNavigationBarItem>[
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'Home',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.message),
-          label: 'Chats',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
-        // Ajoutez d'autres éléments si nécessaire (Matches, Settings)
-      ],
-      // Vous pouvez ajouter des propriétés de style ici pour personnaliser l'apparence
-      // selectedItemColor: Colors.blue,
-      // unselectedItemColor: Colors.grey,
-      // backgroundColor: Colors.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(26),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: onTap,
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: AppTheme.textSecondaryColor,
+        showSelectedLabels: true,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Découvrir',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_outline),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Matchs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profil',
+          ),
+        ],
+      ),
     );
   }
 }

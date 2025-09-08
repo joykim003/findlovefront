@@ -7,14 +7,14 @@
 
 // @JsonSerializable() // Ajoutez cette annotation si vous utilisez json_serializable
 class UserProfile {
-  final String id;
+  final int id;
   final String name;
   final int age;
   final String gender; // Ajout du genre
   final String orientation; // Ajout de l'orientation
   final String? location; // La localisation pourrait être optionnelle
   final List<String> interests; // Liste d'intérêts (String pour l'instant)
-  final String? bio; // La bio pourrait être optionnelle
+  final String bio;
   final List<String> photos; // Liste d'URLs ou de chemins d'accès aux photos (String pour l'instant)
 
   UserProfile({
@@ -25,22 +25,60 @@ class UserProfile {
     required this.orientation, // Rendu obligatoire
     this.location,
     required this.interests, // Rendu obligatoire
-    this.bio,
+    required this.bio,
     required this.photos, // Rendu obligatoire
   });
 
+  UserProfile copyWith({
+    int? id,
+    String? name,
+    int? age,
+    String? gender,
+    String? orientation,
+    List<String>? interests,
+    List<String>? photos,
+    String? bio,
+    String? location,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      orientation: orientation ?? this.orientation,
+      interests: interests ?? this.interests,
+      photos: photos ?? this.photos,
+      bio: bio ?? this.bio,
+      location: location ?? this.location,
+    );
+  }
+
   // Factory method pour créer un UserProfile à partir d'un Map (souvent utilisé pour le JSON)
   factory UserProfile.fromJson(Map<String, dynamic> json) {
+    // Fonction helper pour nettoyer les listes
+    List<String> cleanList(dynamic list) {
+      if (list is List) {
+        return list.map((item) {
+          if (item is String) {
+            // Enlève les crochets et guillemets supplémentaires
+            return item.replaceAll('[', '').replaceAll(']', '').replaceAll("'", '');
+          }
+          return item.toString();
+        }).toList();
+      }
+      return [];
+    }
+
     return UserProfile(
-      id: json['id'] as String,
+      id: json['id'] as int,
       name: json['name'] as String,
       age: json['age'] as int,
       gender: json['gender'] as String,
       orientation: json['orientation'] as String,
-      location: json['location'] as String?, // Peut être null
-      interests: List<String>.from(json['interests'] as List), // Assurez-vous que le type est correct
-      bio: json['bio'] as String?, // Peut être null
-      photos: List<String>.from(json['photos'] as List), // Assurez-vous que le type est correct
+      location: json['location'] as String?,
+      interests: cleanList(json['interests']),
+      bio: json['bio'] as String,
+      photos: cleanList(json['photos']),
     );
   }
 

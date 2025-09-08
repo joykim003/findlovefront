@@ -79,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                          context.go('/login'); // Ou '/register' si vous préférez
                       },
                       style: ElevatedButton.styleFrom(
-                         minimumSize: Size(double.infinity, 50), // Bouton pleine largeur
+                         minimumSize: const Size(double.infinity, 50), // Bouton pleine largeur
                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25), // Rayon arrondi
                          ),

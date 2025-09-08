@@ -8,36 +8,41 @@ class IconActionButton extends StatelessWidget {
   final double size;
 
   const IconActionButton({
-    Key? key,
+    super.key,
     required this.icon,
     required this.color,
     required this.onPressed,
-    this.size = 60.0, // Taille par défaut du bouton
-  }) : super(key: key);
+    this.size = 50,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: Icon(
+              icon,
+              color: color,
+              size: size * 0.5,
             ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: color,
-          size: size * 0.6, // Taille de l'icône par rapport au bouton
+          ),
         ),
       ),
     );
